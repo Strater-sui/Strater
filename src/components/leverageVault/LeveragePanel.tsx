@@ -5,6 +5,7 @@ import { useEffect, useState } from "react";
 import FormatNumber from "../formats/formatNumber";
 import { useCurrentAccount, useSignAndExecuteTransactionBlock, useSuiClient } from "@mysten/dapp-kit";
 import { createBucketLeverageTx } from "@/lib/bucket/strategies";
+import { createScallopLeverageTx } from "@/lib/scallop/strategies";
 import { toast } from "react-toastify";
 import { Link } from "lucide-react";
 
@@ -18,7 +19,6 @@ const LeveragePanel = ({ stakeAmount }: IConvertPanelProps) => {
     Number(cryptosPriceData && cryptosPriceData.length > 0
       ? cryptosPriceData?.find((item) => item.symbol === "SUI")?.price ?? 0
       : 0);
-  //TODO: Justa
   const [inputAmount, setInputAmount] = useState("");
   const [leverage, setLeverage] = useState([2]);
   const [suiBalance, setSuiBalance] = useState("0");
@@ -41,8 +41,7 @@ const LeveragePanel = ({ stakeAmount }: IConvertPanelProps) => {
 
   const handleLeverage = async () => {
     if (!account || !inputAmount) return;
-    const tx = await createBucketLeverageTx({
-      suiClient,
+    const tx = await createScallopLeverageTx({
       senderAddress: account.address,
       inputAmount: Math.floor(Number(inputAmount) * 10**9),
       leverage: leverage[0],
@@ -50,9 +49,9 @@ const LeveragePanel = ({ stakeAmount }: IConvertPanelProps) => {
     });
 
     if (!tx) return;
-    tx.setGasBudget(50_000_000);
+    // tx.setGasBudget(50_000_000);
     signAndExecuteTransactionBlock({
-      transactionBlock: tx,
+      transactionBlock: tx as any,
       chain: "sui:mainnet"
     },
     {
