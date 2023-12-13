@@ -194,11 +194,12 @@ const LeveragePanel = ({ stakeAmount }: IConvertPanelProps) => {
             </p>
           </div>
           <div className="w-full flex justify-between">
-            <div className="text-black text-xs">Collateral </div>
+            <div className="text-black text-xs">Collateral</div>
             <FormatNumber
-              value={inputAmount ? Number(inputAmount) * leverage[0] : 0}
+              // TODO: get the change rate
+              value={(inputAmount ? Number(inputAmount) * leverage[0] : 0) * 0.9942}
               notation="standard"
-              unit="SUI"
+              unit="afSUI"
               minFractionDigits={0}
               spaceWithUnit
               skeletonClass="w-16 h-4"
