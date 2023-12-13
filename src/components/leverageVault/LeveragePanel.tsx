@@ -9,8 +9,9 @@ import {
   useSuiClient,
 } from "@mysten/dapp-kit";
 import { createBucketLeverageTx } from "@/lib/bucket/strategies";
-import { Link } from "lucide-react";
+import { createScallopLeverageTx } from "@/lib/scallop/strategies";
 import { toast } from "react-toastify";
+import { Link } from "lucide-react";
 
 interface IConvertPanelProps {
   stakeAmount: string;
@@ -21,9 +22,7 @@ const LeveragePanel = ({ stakeAmount }: IConvertPanelProps) => {
   const suiPric = Number(
     cryptosPriceData && cryptosPriceData.length > 0
       ? cryptosPriceData?.find((item) => item.symbol === "SUI")?.price ?? 0
-      : 0
-  );
-  //TODO: Justa
+      : 0);
   const [inputAmount, setInputAmount] = useState("");
   const [leverage, setLeverage] = useState([2]);
   const [suiBalance, setSuiBalance] = useState("0");
@@ -54,8 +53,17 @@ const LeveragePanel = ({ stakeAmount }: IConvertPanelProps) => {
       toast.warning("Please input amount");
       return;
     }
+
+    const debtAmount = inputAmount
+      ? Number(inputAmount) * suiPric * (leverage[0] - 1)
+      : 0;
+    if (debtAmount < 10) {
+      toast.warning("Min debt amount of Bucket is 10");
+      return;
+    }
+
     const tx = await createBucketLeverageTx({
-      suiClient,
+      suiClient: suiClient as any,
       senderAddress: account.address,
       inputAmount: Math.floor(Number(inputAmount) * 10 ** 9),
       leverage: leverage[0],
@@ -63,37 +71,34 @@ const LeveragePanel = ({ stakeAmount }: IConvertPanelProps) => {
     });
 
     if (!tx) return;
-    tx.setGasBudget(50_000_000);
-    signAndExecuteTransactionBlock(
-      {
-        transactionBlock: tx,
-        chain: "sui:mainnet",
+    // tx.setGasBudget(50_000_000);
+    signAndExecuteTransactionBlock({
+      transactionBlock: tx as any,
+      chain: "sui:mainnet"
+    },
+    {
+      onSuccess: (res) => {
+        suiClient.waitForTransactionBlock({ digest: res.digest }).then(() => {
+          if (!!res.digest) {
+            toast.success(
+              <div>
+                <Link
+                  target="_blank"
+                  href="https://app.bucketprotocol.io/position"
+                >
+                  Success! Click to see your position
+                </Link>
+              </div>
+            );
+          } else {
+            toast.error("Exceed slippage! Try smaller amount");
+          }
+        });
       },
-      {
-        onSuccess: (res) => {
-          suiClient.waitForTransactionBlock({ digest: res.digest }).then(() => {
-            if (!!res.digest) {
-              toast.success(
-                <div>
-                  <Link
-                    target="_blank"
-                    href="https://app.bucketprotocol.io/position"
-                  >
-                    Success! Click to see your position
-                  </Link>
-                </div>
-              );
-            } else {
-              console.log("test");
-              toast.error("Exceed slippage! Try smaller amount");
-            }
-          });
-        },
-        onError: () => {
-          toast.error("Exceed slippage! Try smaller amount");
-        },
-      }
-    );
+      onError: () => {
+        toast.error("Something went wrong");
+      },
+    });
   };
 
   const getLiquidationPrice = (): number => {
