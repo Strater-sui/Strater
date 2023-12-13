@@ -41,7 +41,8 @@ const LeveragePanel = ({ stakeAmount }: IConvertPanelProps) => {
 
   const handleLeverage = async () => {
     if (!account || !inputAmount) return;
-    const tx = await createScallopLeverageTx({
+    const tx = await createBucketLeverageTx({
+      suiClient: suiClient as any,
       senderAddress: account.address,
       inputAmount: Math.floor(Number(inputAmount) * 10**9),
       leverage: leverage[0],
